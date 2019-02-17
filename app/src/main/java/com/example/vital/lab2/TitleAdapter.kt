@@ -13,7 +13,7 @@ class TitleAdapter(val items: ArrayList<String>, val context: Context): Recycler
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder?.movieTitle?.text = items.get(position)
+        holder.movieTitle?.text = items.get(position)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, p1: Int): ViewHolder {

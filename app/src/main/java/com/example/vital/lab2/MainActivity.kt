@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
         adapter = TitleAdapter(ArrayList(), this)
         recyclerView.adapter = adapter
 
-        loadButton = findViewById(R.id.btnLoad)
+        loadButton = btnLoad
         loadButton.setOnClickListener {
             progressBar.visibility = View.VISIBLE
 
