@@ -7,21 +7,29 @@ import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.title_list_item.view.*
 
-class TitleAdapter(val items: ArrayList<String>, val context: Context): RecyclerView.Adapter<ViewHolder>() {
+class TitleAdapter(val items: ArrayList<Movie>, val context: Context): RecyclerView.Adapter<TitleAdapter.ViewHolder>() {
+    var onItemClick: ((String) -> Unit)? = null
+
     override fun getItemCount(): Int {
         return items.size
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.movieTitle?.text = items.get(position)
+        holder.movieTitle?.text = items.get(position).Title
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, p1: Int): ViewHolder {
-        return ViewHolder(LayoutInflater.from(context).inflate(R.layout.title_list_item, parent, false))
+        return ViewHolder(LayoutInflater.from(context).inflate(R.layout.title_list_item, parent, false));
     }
 
-}
 
-class ViewHolder (view: View) : RecyclerView.ViewHolder(view) {
-    val movieTitle = view.movie_title
+    inner class ViewHolder (view: View) : RecyclerView.ViewHolder(view) {
+        val movieTitle = view.movie_title
+
+        init {
+            view.setOnClickListener {
+                onItemClick?.invoke(items[adapterPosition].Title)
+            }
+        }
+    }
 }

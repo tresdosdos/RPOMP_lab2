@@ -29,6 +29,24 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = TitleAdapter(ArrayList(), this)
         recyclerView.adapter = adapter
+        val fm = supportFragmentManager
+        val movieFragment = MovieFragment()
+
+        adapter.onItemClick = {
+            item ->
+            run {
+                if (movieFragment.dialog != null) {
+                    return@run
+                }
+                val args = Bundle()
+                args.putString("title", adapter.items.find { it -> it.Title == item }?.Title)
+                args.putString("year", adapter.items.find { it -> it.Title == item }?.Year)
+                args.putString("type", adapter.items.find { it -> it.Title == item }?.Type)
+                args.putString("imdbID", adapter.items.find { it -> it.Title == item }?.imdbID)
+                movieFragment.arguments = args
+                movieFragment.show(fm, item)
+            }
+        }
 
         loadButton = btnLoad
         loadButton.setOnClickListener {
@@ -78,9 +96,7 @@ class MainActivity : AppCompatActivity() {
                     progressBar.visibility = View.INVISIBLE
 
                     res?.let {
-                        it.Search?.map {
-                            it.Title
-                        }?.let { it1 -> adapter.items.addAll(it1) }
+                        it.Search?.let { it1 -> adapter.items.addAll(it1) }
                         adapter.notifyDataSetChanged()
                     }
 
@@ -104,11 +120,7 @@ class MainActivity : AppCompatActivity() {
             val weatherData =
                     mDb?.movieDao()?.getAll()
             if (weatherData != null && weatherData.isNotEmpty()) {
-                adapter.items.addAll(
-                        weatherData.map { it ->
-                            it.Title
-                        }
-                )
+                adapter.items.addAll(weatherData)
             }
         }
         mDbWorkerThread.postTask(task)
