@@ -1,5 +1,7 @@
 package com.example.vital.lab2
 
+import android.content.Context
+import android.net.ConnectivityManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
@@ -16,6 +18,8 @@ import java.io.IOException
 class MainActivity : AppCompatActivity() {
     lateinit var loadButton: Button
     lateinit var adapter: TitleAdapter
+    lateinit var mDbWorkerThread: DbWorkerThread
+    var mDb: MovieDataBase? = null
     val http = OkHttpClient()
     var page = 1
 
@@ -33,7 +37,7 @@ class MainActivity : AppCompatActivity() {
             addTitles()
         }
 
-        editText.addTextChangedListener(object:TextWatcher {
+        editText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {}
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -45,11 +49,18 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
+
+        mDbWorkerThread = DbWorkerThread("dbWorkerThread")
+        mDbWorkerThread.start()
+        mDb = MovieDataBase.getInstance(this)
+        if (!isConnectedToInternet()) {
+            fetchDataFromDb()
+        }
     }
 
     fun addTitles() {
         progressBar.visibility = View.VISIBLE
-        val req = Request.Builder().url("http://www.omdbapi.com/?apikey=c8d2a36b&s=${editText.text}&page=$page").build()
+        val req = Request.Builder().url("https://www.omdbapi.com/?apikey=c8d2a36b&s=${editText.text}&page=$page").build()
 
         http.newCall(req).enqueue(object : Callback {
             override fun onFailure(call: Call?, e: IOException?) {
@@ -59,11 +70,17 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call?, response: Response?) {
                 val res: MovieSearchResults? = Gson().fromJson(response?.body()?.charStream(), MovieSearchResults::class.java)
 
+                res?.Search?.map {
+                    mDb?.movieDao()?.insert(it)
+                }
+
                 this@MainActivity.runOnUiThread {
                     progressBar.visibility = View.INVISIBLE
 
                     res?.let {
-                        it.Search?.map { it.Title }?.let { it1 -> adapter.items.addAll(it1) }
+                        it.Search?.map {
+                            it.Title
+                        }?.let { it1 -> adapter.items.addAll(it1) }
                         adapter.notifyDataSetChanged()
                     }
 
@@ -74,5 +91,26 @@ class MainActivity : AppCompatActivity() {
         page++
     }
 
+    fun Context.isConnectedToInternet(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
+        val activeNetwork = cm.activeNetworkInfo
+
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting
+    }
+
+    private fun fetchDataFromDb() {
+        val task = Runnable {
+            val weatherData =
+                    mDb?.movieDao()?.getAll()
+            if (weatherData != null && weatherData.isNotEmpty()) {
+                adapter.items.addAll(
+                        weatherData.map { it ->
+                            it.Title
+                        }
+                )
+            }
+        }
+        mDbWorkerThread.postTask(task)
+    }
 }
